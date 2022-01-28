@@ -1,0 +1,13 @@
+name: 'Create datasource.json'
+inputs:
+  GH_TOKEN:
+    description: 'Github token'
+    default: $
+    required: true
+  CWD:
+    description: 'Working Directory'
+    default: ''
+    required: false
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
