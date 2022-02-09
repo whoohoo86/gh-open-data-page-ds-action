@@ -156,7 +156,7 @@ function treeIt(items: GithubTreeItem[], isLfsFile: (x: string) => boolean, repo
                     } else {
                         const folder: FolderDatasourceContent = {
                             content: r[name].$result,
-                            path: item.path!,
+                            path: _.initial(item.path!.split('/')).join('/'),
                             name,
                             $type: 'folder'
                         };
