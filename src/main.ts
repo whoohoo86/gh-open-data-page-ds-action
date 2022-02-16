@@ -12,6 +12,7 @@ const ContentPathPredicates: ((x: string) => boolean)[] = [
     x => !x.startsWith('.') && !x.startsWith('Archiv'),
     x => !_.includes(['LIZENZ', 'LICENSE'], x)
 ];
+const TagBlacklist: string[] = ['germany', 'deutschland', 'rki'];
 
 async function readZenodoJson(octokit: OctokitApi, repo: { owner: string, repo: string }, tree: GithubTreeItem[]) {
     const zenodoContentResult = { contributors: [] as { name: string, role: string }[], lastUpdated: new Date(), name: repo.repo, authors: [] as string[], description: '' };
@@ -209,7 +210,7 @@ async function run() {
         ...(await zenodoContent$),
         readme: await readmeContent$,
         licence: repo.license?.spdx_id || '',
-        tags: (await topics$).data.names,
+        tags: (await topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase())),
         content: _.orderBy(content, x => `${x.$type}_${x.path}`)
     };
 
