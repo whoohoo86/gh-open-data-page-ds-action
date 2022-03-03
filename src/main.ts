@@ -216,6 +216,8 @@ async function run() {
         content: _.orderBy(content, x => `${x.$type}_${x.path}`)
     };
 
+    core.info(`Created datasource.json with\n${JSON.stringify(datasourceJson)}`);
+
     const dir = path.join(cwd, './src/app/data/datasource.json');
 
     core.info(`Writing datasource.json to '${dir}'.`);
