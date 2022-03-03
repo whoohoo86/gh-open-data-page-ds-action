@@ -50,6 +50,7 @@ const ContentPathPredicates = [
     x => !x.startsWith('.') && !x.startsWith('Archiv'),
     x => !_.includes(['LIZENZ', 'LICENSE'], x)
 ];
+const TagBlacklist = ['germany', 'deutschland', 'rki'];
 function readZenodoJson(octokit, repo, tree) {
     return __awaiter(this, void 0, void 0, function* () {
         const zenodoContentResult = { contributors: [], lastUpdated: new Date(), name: repo.repo, authors: [], description: '' };
@@ -149,10 +150,11 @@ function createFile(item, isLfs, repo, branch) {
     const visitUrl = isLfs
         ? mediaUrl //this.urlBuilder.buildLfsVisit(repoInfo.name, repoInfo.branch, item.path)
         : rawUrl; //this.urlBuilder.buildVisit(repoInfo.name, repoInfo.branch, item.path)
+    const name = _.last(item.path.split('/'));
     return {
         $type: 'file',
         path: item.path,
-        name: item.path,
+        name: name,
         downloadUrl,
         previewUrl,
         visitUrl,
@@ -173,7 +175,7 @@ function treeIt(items, isLfsFile, repo, branch) {
                     else {
                         const folder = {
                             content: r[name].$result,
-                            path: item.path,
+                            path: _.initial(item.path.split('/')).join('/'),
                             name,
                             $type: 'folder'
                         };
@@ -213,7 +215,8 @@ function run() {
         const content = treeIt(relevantTreeItems, isLfsFile, github.context.repo, branch);
         const datasourceJson = Object.assign(Object.assign({ id: repo.name, branch,
             externalLinks,
-            doi }, (yield zenodoContent$)), { readme: yield readmeContent$, licence: ((_a = repo.license) === null || _a === void 0 ? void 0 : _a.spdx_id) || '', tags: (yield topics$).data.names, content: _.orderBy(content, x => `${x.$type}_${x.path}`) });
+            doi }, (yield zenodoContent$)), { readme: yield readmeContent$, licence: ((_a = repo.license) === null || _a === void 0 ? void 0 : _a.spdx_id) || '', tags: (yield topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase())), content: _.orderBy(content, x => `${x.$type}_${x.path}`) });
+        core.info(`Created datasource.json with\n${JSON.stringify(datasourceJson)}`);
         const dir = path.join(cwd, './src/app/data/datasource.json');
         core.info(`Writing datasource.json to '${dir}'.`);
         fs.writeFileSync(dir, JSON.stringify(datasourceJson));
