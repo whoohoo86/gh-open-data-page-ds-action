@@ -131,10 +131,12 @@ function createFile(item: GithubTreeItem, isLfs: boolean, repo: { repo: string, 
         ? mediaUrl //this.urlBuilder.buildLfsVisit(repoInfo.name, repoInfo.branch, item.path)
         : rawUrl; //this.urlBuilder.buildVisit(repoInfo.name, repoInfo.branch, item.path)
 
+    const name = _.last(item.path!.split('/'));
+
     return {
         $type: 'file',
         path: item.path,
-        name: item.path,
+        name: name!,
         downloadUrl,
         previewUrl,
         visitUrl,
