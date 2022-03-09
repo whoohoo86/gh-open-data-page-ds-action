@@ -53,7 +53,7 @@ const ContentPathPredicates = [
 const TagBlacklist = ['germany', 'deutschland', 'rki'];
 function readZenodoJson(octokit, repo, tree) {
     return __awaiter(this, void 0, void 0, function* () {
-        const zenodoContentResult = { contributors: [], lastUpdated: new Date(), name: repo.repo, authors: [], description: '' };
+        const zenodoContentResult = { contributors: [], lastUpdated: new Date(), tags: [], name: repo.repo, authors: [], description: '' };
         const zenodoJsonNode = tree.find(x => x.path && x.path.toLowerCase() === '.zenodo.json');
         if (zenodoJsonNode && zenodoJsonNode.path) {
             const { data: zenodoJsonContent } = yield octokit.rest.repos.getContent(Object.assign(Object.assign({}, repo), { path: zenodoJsonNode.path }));
@@ -69,6 +69,7 @@ function readZenodoJson(octokit, repo, tree) {
                     ? zenodoJson.creators.map(x => x.name)
                     : [];
                 zenodoContentResult.description = zenodoJson.description;
+                zenodoContentResult.tags = zenodoJson.keywords.filter(x => !TagBlacklist.includes(x.toLowerCase()));
             }
         }
         return zenodoContentResult;
@@ -213,9 +214,10 @@ function run() {
         const isLfsFile = yield createLfsFileDescriminator(octokit, github.context.repo, tree);
         const relevantTreeItems = tree.filter(node => node.path && ContentPathPredicates.every(x => x(node.path)));
         const content = treeIt(relevantTreeItems, isLfsFile, github.context.repo, branch);
+        const tags = (yield topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase()));
         const datasourceJson = Object.assign(Object.assign({ id: repo.name, branch,
             externalLinks,
-            doi }, (yield zenodoContent$)), { readme: yield readmeContent$, licence: ((_a = repo.license) === null || _a === void 0 ? void 0 : _a.spdx_id) || '', tags: (yield topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase())), content: _.orderBy(content, x => `${x.$type}_${x.path}`) });
+            doi }, (yield zenodoContent$)), { readme: yield readmeContent$, licence: ((_a = repo.license) === null || _a === void 0 ? void 0 : _a.spdx_id) || '', content: _.orderBy(content, x => `${x.$type}_${x.path}`) });
         core.info(`Created datasource.json with\n${JSON.stringify(datasourceJson)}`);
         const dir = path.join(cwd, './src/app/data/datasource.json');
         core.info(`Writing datasource.json to '${dir}'.`);
