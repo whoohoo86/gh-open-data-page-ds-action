@@ -15,7 +15,7 @@ const ContentPathPredicates: ((x: string) => boolean)[] = [
 const TagBlacklist: string[] = ['germany', 'deutschland', 'rki'];
 
 async function readZenodoJson(octokit: OctokitApi, repo: { owner: string, repo: string }, tree: GithubTreeItem[]) {
-    const zenodoContentResult = { contributors: [] as { name: string, role: string }[], lastUpdated: new Date(), name: repo.repo, authors: [] as string[], description: '' };
+    const zenodoContentResult = { contributors: [] as { name: string, role: string }[], lastUpdated: new Date(), tags: [] as string[], name: repo.repo, authors: [] as string[], description: '' };
     const zenodoJsonNode = tree.find(x => x.path && x.path.toLowerCase() === '.zenodo.json');
     if (zenodoJsonNode && zenodoJsonNode.path) {
 
@@ -34,6 +34,7 @@ async function readZenodoJson(octokit: OctokitApi, repo: { owner: string, repo: 
                 ? zenodoJson.creators.map(x => x.name)
                 : [];
             zenodoContentResult.description = zenodoJson.description;
+            zenodoContentResult.tags = zenodoJson.keywords.filter(x => !TagBlacklist.includes(x.toLowerCase()));
         }
     }
     return zenodoContentResult;
@@ -203,6 +204,7 @@ async function run() {
     const isLfsFile = await createLfsFileDescriminator(octokit, github.context.repo, tree);
     const relevantTreeItems = tree.filter(node => node.path && ContentPathPredicates.every(x => x(node.path!)));
     const content = treeIt(relevantTreeItems, isLfsFile, github.context.repo, branch);
+    const tags = (await topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase()));
 
     const datasourceJson: OpenDataDatasource = {
         id: repo.name,
@@ -212,7 +214,6 @@ async function run() {
         ...(await zenodoContent$),
         readme: await readmeContent$,
         licence: repo.license?.spdx_id || '',
-        tags: (await topics$).data.names.filter(x => !TagBlacklist.includes(x.toLowerCase())),
         content: _.orderBy(content, x => `${x.$type}_${x.path}`)
     };
 
